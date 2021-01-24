@@ -11,7 +11,7 @@ public abstract class Animal {
 
         public int price;
 
-        AnimalPrice(int price){
+        AnimalPrice(int price) {
             this.price = price;
         }
     }
@@ -19,12 +19,8 @@ public abstract class Animal {
     private String name;
     private String gender;
     private int health = 100;
-
-    public Animal (String name, String gender, int health){
-        this.name = name;
-        this.gender = gender;
-        this.health = health;
-    }
+    private boolean alive = true;
+    private boolean breeded = false;
 
     public String getName() {
         return name;
@@ -38,9 +34,8 @@ public abstract class Animal {
         return gender;
     }
 
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
+    public void setGender(String gender) {this.gender = gender;}
+
 
     public int getHealth() {
         return health;
@@ -48,5 +43,17 @@ public abstract class Animal {
 
     public void setHealth(int health) {
         this.health = health;
+    }
+
+    public boolean isAlive() {
+        return alive;
+    }
+
+    public boolean isBreeded() {
+        return breeded;
+    }
+
+    public void setBreeded(boolean breeded) {
+        this.breeded = breeded;
     }
 }
