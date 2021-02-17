@@ -1,26 +1,21 @@
 package com.company.game.animals;
 
+import com.company.game.food.Food;
+
+import java.util.ArrayList;
+import java.util.Random;
+
 public abstract class Animal {
 
-    public enum AnimalPrice {
-        HORSE(300),
-        COW(150),
-        SHEEP(50),
-        PIG(35),
-        HEN(10);
-
-        public int price;
-
-        AnimalPrice(int price) {
-            this.price = price;
-        }
-    }
+    public static final int MALE = 1, FEMALE = 2;
 
     private String name;
-    private String gender;
+    private int gender;
+    private int price;
+
     private int health = 100;
-    private boolean alive = true;
     private boolean breeded = false;
+    protected static ArrayList<Food> canEat;
 
     public String getName() {
         return name;
@@ -30,11 +25,29 @@ public abstract class Animal {
         this.name = name;
     }
 
-    public String getGender() {
+    public String getGenderString() {
+        return gender == MALE ? "Male" : "Female";
+    }
+
+    private int getGender() {
         return gender;
     }
 
-    public void setGender(String gender) {this.gender = gender;}
+    public void setGender(int gender) {
+        this.gender = gender;
+    }
+
+    /**
+     * Returns the current price of the animal. It changes depending on how healthy the animal is.
+     * @return the current price of the animal.
+     */
+    public int getPrice() {
+        return (price * health) / 100;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
 
 
     public int getHealth() {
@@ -46,7 +59,7 @@ public abstract class Animal {
     }
 
     public boolean isAlive() {
-        return alive;
+        return health > 0;
     }
 
     public boolean isBreeded() {
@@ -55,5 +68,34 @@ public abstract class Animal {
 
     public void setBreeded(boolean breeded) {
         this.breeded = breeded;
+    }
+
+    public boolean canBreedWith(Animal other) {
+        return  other.getType().equals(this.getType()) &&
+                other.getGender() != this.getGender();
+    }
+
+    public ArrayList<Food> getCanEat() {
+        return canEat;
+    }
+
+    public String getType() {
+        return getClass().getSimpleName();
+    }
+
+    public void hurt() {
+        Random random = new Random();
+        int range = 30 - 10 + 1;
+        int randomNum =  random.nextInt(range) + 10;
+        health = health - randomNum;
+    }
+
+    public void feed(Food food) {
+        health = health + 10;
+        //Todo! the quantity of food should be lowered by some amount.
+    }
+
+    public String toString() {
+        return getName() + " : " + getGenderString() + " " + getType() + ". Health: " + getHealth() + ", Selling price: " + getPrice();
     }
 }

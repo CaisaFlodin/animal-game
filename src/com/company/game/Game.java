@@ -1,175 +1,258 @@
 package com.company.game;
 
-import com.company.game.animals.Animal;
+import com.company.game.animals.*;
 import com.company.game.food.Food;
-
+import com.company.utils.InputHandler;
+import com.company.utils.OutputHandler;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 public class Game {
 
-    private final Scanner scanner = new Scanner(System.in);
-    private int currentTurn;
+    /**
+     * These constants where previously located in the class Rules, but were moved here.
+     */
+    private final static int MIN_PLAYERS = 1, MAX_PLAYERS = 4;
+    private final static int MIN_TURNS = 5, MAX_TURNS = 30;
+
+    private final Store store = new Store();
 
     public Game() {
-        startGame();
+        System.out.println("\nWelcome to Fantazoo!");
+        System.out.println("""
+                Select an option:
+                1. New game
+                2. Load game""");
+        int selection = InputHandler.parseUserNumberInput(2);
+        if(selection == 1) {
+            startGame(createNewGame());
+        }else{
+            //TODO! Implement game loading logic
+            System.err.println("Not yet implemented!");
+        }
+
     }
 
-    private void startGame() {
+    public GameState createNewGame() {
 
-        //// Set up game rules and players ////
-        Rules rules = new Rules();
-        Store store = new Store();
+        System.out.println("\nHow many players (1-4)?");
 
-
-        System.out.println("Välkommern till de coola spelet!");
-
-        System.out.println("Hur många spelare (1-4)?");
-
-        int numberOfPlayers = parseUserNumberInput(Rules.MAX_PLAYERS);
-        numberOfPlayers = rules.checkNumberOfPlayers(numberOfPlayers);
+        int numberOfPlayers = InputHandler.parseUserNumberInput(MIN_PLAYERS, MAX_PLAYERS);
 
         ArrayList<Player> players = new ArrayList<>();
         for (int i = 0; i < numberOfPlayers; i++) {
-            System.out.println("Vad heter spelare " + (i + 1) + "?");
-            String name = scanner.nextLine();
+            System.out.println("What's the name of player " + (i + 1) + "?");
+            String name = InputHandler.getString();
             players.add(new Player(name));
         }
-        System.out.println("Hur många rundor (5-30)?");
+        System.out.println("How many turns (5-30)?");
 
-        int numberOfTurns = parseUserNumberInput(Rules.MAX_TURNS);
-        numberOfTurns = rules.checkNumberOfTurns(numberOfTurns);
+        int numberOfTurns = InputHandler.parseUserNumberInput(MIN_TURNS, MAX_TURNS);
 
-        System.out.println("\nLet's go!\n");
+        System.out.println("\nLet's go!");
+        return new GameState(players, numberOfTurns);
+    }
+
+
+    private void startGame(GameState state) {
+
+
+
+        OutputHandler.clearTheScreen();
 
         //// The turns ////
 
-        currentTurn = 1;
-        boolean isRunning = true;
-        while (isRunning && currentTurn <= numberOfTurns) {
-            System.out.println("\nRound " + currentTurn);
+        while (!state.gameIsOver()) {
+            System.out.println("\n\nRound " + state.getCurrentTurn());
 
-            // Spellogik
-            for (int i = 0; i < numberOfPlayers; i++) {
-                Player player = players.get(i);
-                System.out.printf("""
-                        What do you want to do %s?:
-                        1. Go to store
-                        2. Feed my animals
-                        3. Breed animals
-                        4. How to play //TA BORT??
-                        5. Exit game
-                        """, player.getName());
-
-                int selection = parseUserNumberInput(5);
-                switch (selection) {
-                    case 1:
-                        System.out.println("Welcome to the store! \n");
-                        System.out.print("""
-                                What do you want to buy?:
-                                1. Animals
-                                2. Animal food
-                                """);
-                        selection = parseUserNumberInput(2);
-                        if (selection == 1) {
-                            System.out.print("""
-                                    What animal would you like to buy?
-                                    1.Horse
-                                    2.Cow
-                                    3.Sheep
-                                    4.Pig
-                                    5.Hen
-                                    """);
-
-                            selection = parseUserNumberInput(5);
-
-                            Animal animal = switch (selection) {
-                                case 1 -> store.buyAHorse();
-                                case 2 -> store.buyACow();
-                                case 3 -> store.buyASheep();
-                                case 4 -> store.buyAPig();
-                                case 5 -> store.buyAHen();
-                                default -> null;
-                            };
-                            System.out.print("""
-                                    Which gender?
-                                    1. Male
-                                    2. Female
-                                    """);
-
-                            selection = parseUserNumberInput(2);
-                            String name = "";
-                            if (selection == 1) {
-                                System.out.println("You chose a male! What do you want to call him?");
-                            } else {
-                                System.out.println("You chose a female! What do you want to call her?");
-                            }
-
-                            name = scanner.nextLine();
-                            if (player.nameExists(name)) {
-                                System.out.println("You already have an animal called choose another name.");
-                                name = scanner.nextLine();
-                            }
-
-                            animal.setName(name);
-                            player.addAnimal(animal);
-
-                        } else if (selection == 2) {
-                            System.out.println("""
-                                    What food would you like to buy?
-                                    1.Horse food
-                                    2.Cow food
-                                    3.Sheep food
-                                    4.Pig food
-                                    5.Hen food
-                                    """);
-
-                            selection = parseUserNumberInput(5);
-
-                            Food food = switch (selection) {
-                                case 1 -> store.buyHorseFood();
-                                case 2 -> store.buyCowFood();
-                                case 3 -> store.buySheepFood();
-                                case 4 -> store.buyPigFood();
-                                case 5 -> store.buyHenFood();
-                                default -> null;
-                            };
-
-                            player.addFood(food);
-
-                        }
-                        break;
-                    case 2:
-
-                        break;
-                    case 3:
-                        break;
-                    case 4:
-                        break;
-                    case 5:
-                        System.out.println("Spelet avslutas, tack för den här gången!");
-                        isRunning = false;
-                        break;
+            // Game logic
+            for (Player player: state.getPlayers()) {
+                OutputHandler.displayPlayerStatus(player);
+                boolean gameContinues = showMainMenu(player);
+                if(!gameContinues) {
+                    return;
                 }
+                OutputHandler.clearTheScreen();
             }
-
-            currentTurn++;
+            //Updates state
+            state.nextRound();
         }
     }
 
-    private int parseUserNumberInput(int numberOfAlternatives) {
-        try {
-            String input = scanner.nextLine();
-            int number = Integer.parseInt(input);
-            if (number > 0 || number <= numberOfAlternatives) {
-                return number;
-            } else {
-                System.out.println("Enter a valid number!");
-                return parseUserNumberInput(numberOfAlternatives);
+    /**
+     * Locks the player in a selection prompt until they decide the round has ended,
+     * or want to quit the game.
+     * @param player the current player
+     * @return true if game continues, false otherwise
+     */
+    private boolean showMainMenu(Player player) {
+        int selection = -1;
+        do {
+            System.out.printf("""         
+                What do you want to do %s?:
+                1. Go to store
+                2. Feed my animals
+                3. Breed animals
+                4. Sell animals
+                5. Check my status
+                6. Finish my turn
+                7. Exit game
+                """, player.getName());
+            selection = InputHandler.parseUserNumberInput(1, 7);
+            switch (selection) {
+                case 1:
+                    showStoreMenu(player);
+                    break;
+                case 2:
+                    showFeedMenu(player);
+                    break;
+                case 3:
+                    //TODO! Implement animal breeding
+                    System.err.println("Not yet implemented!");
+                    break;
+                case 4:
+                    //TODO! Implement animal selling
+                    System.err.println("Not yet implemented!");
+                    break;
+                case 5:
+                    OutputHandler.displayPlayerStatus(player);
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    System.out.println("Spelet avslutas, tack för den här gången!");
+                    break;
+                    //throw new Exception("Finished");
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Enter a number!");
-            return parseUserNumberInput(numberOfAlternatives);
+        } while(selection < 6);
+
+        return selection != 7;
+    }
+
+
+    private void showFeedMenu(Player player) {
+        if (player.ownedFoods.size() != 0) {
+            System.out.println("\nWhich animal would you like to feed?");
+            OutputHandler.displayPlayerAnimals(player);
+            int selection = InputHandler.parseUserNumberInput(player.ownedAnimals.size());
+            Animal animal = player.getAnimal(selection);
+            System.out.println("\nWhat type of food should you give it?");
+            OutputHandler.displayPlayerFoods(player);
+            selection = InputHandler.parseUserNumberInput(player.ownedFoods.size());
+            Food food = player.getFood(selection);
+            animal.feed(food);
+        } else {
+            System.out.println("\nYou have no food!");
+        }
+    }
+
+    /**
+     * Locks the player in the store selection prompt until they decide to leave.
+     * @param player the current player
+     */
+    private void showStoreMenu(Player player) {
+
+        System.out.println("Welcome to the store!");
+        int selection = -1;
+        do {
+            System.out.println("""                         
+                 What do you want to do?:
+                1. Buy animals
+                2. Buy animal food
+                3. Sell animal
+                4. Go back""");
+            selection = InputHandler.parseUserNumberInput(1, 4);
+            switch(selection) {
+                case 1:
+                    buyAnimal(player);
+                    break;
+                case 2:
+                    buyAnimalFood(player);
+                    break;
+                case 3:
+                    sellAnimal(player);
+                    break;
+                case 4:
+                    break;
+            }
+        } while(selection != 4);
+    }
+
+
+    /**
+     * Lets the player select an animal for purchase, should they have enough funds.
+     * @param player the current player
+     */
+    private void buyAnimal(Player player) {
+
+        if (player.hasEnoughMoney()) {
+            System.out.println("What animal would you like to buy?");
+            store.displayAnimals();
+
+            int selection = InputHandler.parseUserNumberInput(1,5);
+            Animal animal = switch (selection) {
+                case 1 -> store.buyUnicorn();
+                case 2 -> store.buyGryphon();
+                case 3 -> store.buyDragon();
+                case 4 -> store.buyLlama();
+                case 5 -> store.buySloth();
+                default -> null;
+            };
+
+            System.out.println("Oh, a " + animal.getType() + "! Which gender?");
+            System.out.println("1. Male");
+            System.out.println("2. Female");
+            selection = InputHandler.parseUserNumberInput(2);
+            if (selection == 1) {
+                animal.setGender(Animal.MALE);
+                System.out.println("You chose a male! What do you want to call him?");
+            } else {
+                animal.setGender(Animal.FEMALE);
+                System.out.println("You chose a female! What do you want to call her?");
+            }
+            String name = InputHandler.getUniqueAnimalName(player);
+
+            animal.setName(name);
+
+
+            player.addAnimal(animal);
+            player.subtractExpense(animal.getPrice());
+        } else {
+            System.out.println("You don´t have enough money!");
+        }
+    }
+
+
+
+
+    private void sellAnimal(Player player) {
+        if(player.ownedAnimals.size() > 0) {
+            System.out.print("Which animal do you want to sell?");
+            //Not yet implemented
+        } else{
+            System.out.println("The player " + player.getName() + " does not have any animals!");
+        }
+
+    }
+
+    private void buyAnimalFood(Player player) {
+        if (player.hasEnoughMoney()) {
+            System.out.print("\nWhat food would you like to buy?\n");
+            store.displayFoods();
+
+            int selection = InputHandler.parseUserNumberInput(5);
+
+            Food food = switch (selection) {
+                case 1 -> store.buyStardust();
+                case 2 -> store.buyMeat();
+                case 3 -> store.buyLeaves();
+                case 4 -> store.buyGrass();
+                default -> null;
+            };
+
+            player.addFood(food);
+            player.subtractExpense(food.getPrice());
+        } else {
+            System.out.println("You don´t have enough money!");
         }
     }
 }
