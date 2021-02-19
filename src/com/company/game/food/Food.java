@@ -1,6 +1,8 @@
 package com.company.game.food;
 
-public abstract class Food {
+import java.io.Serializable;
+
+public abstract class Food implements Serializable {
 
     private int price;
     private int healthValue;

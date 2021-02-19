@@ -2,40 +2,37 @@ package com.company.game;
 
 import com.company.game.animals.*;
 import com.company.game.food.*;
+import com.company.utils.InputHandler;
+import com.company.utils.OutputHandler;
 
 import java.util.ArrayList;
 
 public class Store {
 
-    protected ArrayList<Food> foodsForSale = new ArrayList<>();
-    protected ArrayList<Animal> animalsForSale = new ArrayList<>();
+    private ArrayList<Food> foodsForSale = new ArrayList<>();
+    private ArrayList<Animal> animalsForSale = new ArrayList<>();
 
     public Store() {
+        //restock foods and animals when bought
+        restockFoods();
+        restockAnimals();
+    }
+
+    private void restockFoods(){
+        foodsForSale.clear();
         foodsForSale.add(new Stardust());
         foodsForSale.add(new Meat());
         foodsForSale.add(new Leaves());
         foodsForSale.add(new Grass());
+    }
+
+    private void restockAnimals(){
+        animalsForSale.clear();
         animalsForSale.add(new Unicorn());
         animalsForSale.add(new Gryphon());
         animalsForSale.add(new Dragon());
         animalsForSale.add(new Llama());
         animalsForSale.add(new Sloth());
-    }
-
-    public void displayAnimals() {
-        int index = 1;
-        for (Animal animal : animalsForSale) {
-            System.out.println(index + ". " + animal.getType() + " " + animal.getPrice());
-            index++;
-        }
-    }
-
-    public void displayFoods() {
-        int index = 1;
-        for (Food food : foodsForSale) {
-            System.out.println(index + "." + food.getName());
-            index++;
-        }
     }
 
     public Food buyStardust() {
@@ -74,16 +71,33 @@ public class Store {
         return animalsForSale.get(4);
     }
 
-    public void sellAnimal(Player player) {
-        player.ownedAnimals.remove(0);
+    /**
+     * Removes the animal from the list and creates a new one in it's stead.
+     * @param animal the animal to be replaced
+     */
+    public void replenishAnimal(Animal animal) {
+        int index = animalsForSale.indexOf(animal);
+        Animal newAnimal = switch(index) {
+            case 0 -> new Unicorn();
+            case 1 -> new Gryphon();
+            case 2 -> new Dragon();
+            case 3 -> new Llama();
+            case 4 -> new Sloth();
+            default -> null;
+        };
+        if (newAnimal != null) {
+            animalsForSale.set(index, newAnimal);
+        }
+       }
+
+    public ArrayList<Animal> getAnimalsForSale() {
+        return animalsForSale;
     }
 
-       public void buyAnimal(Animal animal, Player player) {
-           if (player.hasEnoughMoney()) {
-               displayAnimals();
-           }
-       }
+    public ArrayList<Food> getFoodsForSale() {
+        return foodsForSale;
     }
+}
 
 
 

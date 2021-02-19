@@ -2,12 +2,14 @@ package com.company.game.animals;
 
 import com.company.game.food.Food;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
-public abstract class Animal {
+public abstract class Animal implements Serializable {
 
     public static final int MALE = 1, FEMALE = 2;
+
 
     private String name;
     private int gender;
@@ -26,7 +28,11 @@ public abstract class Animal {
     }
 
     public String getGenderString() {
-        return gender == MALE ? "Male" : "Female";
+        return switch (gender) {
+            case MALE   -> "Male";
+            case FEMALE -> "Female";
+            default     -> ""; //Before the animal is named
+        };
     }
 
     private int getGender() {
@@ -96,6 +102,18 @@ public abstract class Animal {
     }
 
     public String toString() {
-        return getName() + " : " + getGenderString() + " " + getType() + ". Health: " + getHealth() + ", Selling price: " + getPrice();
+        StringBuilder sb = new StringBuilder();
+        if(name != null) {
+            sb.append(getName()).append(" : ");
+        }
+
+        sb.append(getGenderString())
+            .append(" ")
+            .append(getType())
+            .append(". Health: ")
+            .append(getHealth())
+            .append(", Selling price: ")
+            .append(getPrice());
+        return sb.toString();
     }
 }

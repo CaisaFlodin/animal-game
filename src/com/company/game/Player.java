@@ -3,9 +3,11 @@ package com.company.game;
 import com.company.game.animals.*;
 import com.company.game.food.Food;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Player {
+
+public class Player implements Serializable {
     private final static int STARTING_MONEY = 1000;
 
     private final String name;
@@ -60,12 +62,45 @@ public class Player {
         return false;
     }
 
-    public boolean hasEnoughMoney() {
-       /* if (money >= store. */return true;
+
+    /**
+     * Filters the available animals in the store, and returns the ones
+     * that the player can afford.
+     * @param store
+     * @return
+     */
+    public ArrayList<Animal> getAffordedAnimals(Store store) {
+        ArrayList<Animal> afforded = new ArrayList<>();
+        for(Animal a: store.getAnimalsForSale()) {
+            if(getMoney() >= a.getPrice()) {
+                afforded.add(a);
+            }
+        }
+        return afforded;
     }
+
+    /**
+     * Filters the available foods in the store, and returns the ones
+     * that the player can afford.
+     * @param store
+     * @return
+     */
+    public ArrayList<Food> getAffordedFood(Store store) {
+        ArrayList<Food> afforded = new ArrayList<>();
+        for(Food f: store.getFoodsForSale()) {
+            if(getMoney() >= f.getPrice()) {
+                afforded.add(f);
+            }
+        }
+        return afforded;
+    }
+
 
     public void subtractExpense(int expense) {
         money = money - expense;
+    }
+    public void addProfit(int profit){
+        money = money + profit;
     }
 
     public Animal getAnimal(int selection) {
@@ -84,10 +119,11 @@ public class Player {
         ArrayList<Animal> deadAnimals = new ArrayList<>();
         for (Animal animal : ownedAnimals) {
             animal.hurt();
-            if(!animal.isAlive()){
+            if(!animal.isAlive()) {
                 deadAnimals.add(animal);
             }
         }
+
         for(Animal deadAnimal: deadAnimals) {
             System.out.println(getName() + " : " + deadAnimal.getName() + " is dead!! :(");
             ownedAnimals.remove(deadAnimal);

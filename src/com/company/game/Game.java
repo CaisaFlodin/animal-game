@@ -2,9 +2,11 @@ package com.company.game;
 
 import com.company.game.animals.*;
 import com.company.game.food.Food;
+import com.company.utils.GameStateHandler;
 import com.company.utils.InputHandler;
 import com.company.utils.OutputHandler;
 import java.util.ArrayList;
+
 
 public class Game {
 
@@ -15,6 +17,7 @@ public class Game {
     private final static int MIN_TURNS = 5, MAX_TURNS = 30;
 
     private final Store store = new Store();
+    private GameState state;
 
     public Game() {
         System.out.println("\nWelcome to Fantazoo!");
@@ -24,12 +27,35 @@ public class Game {
                 2. Load game""");
         int selection = InputHandler.parseUserNumberInput(2);
         if(selection == 1) {
-            startGame(createNewGame());
+            state = createNewGame();
         }else{
-            //TODO! Implement game loading logic
-            System.err.println("Not yet implemented!");
-        }
+            state = loadGame();
 
+        }
+        startGame();
+    }
+
+    public GameState loadGame() {
+        ArrayList<String> savedGames = GameStateHandler.getSavedGames();
+        if(savedGames.size() > 0) {
+            OutputHandler.printMessage("Select save file:");
+            for(int i = 0; i < savedGames.size(); i++) {
+                OutputHandler.printMessage((i + 1) + ". " + savedGames.get(i));
+            }
+            int selection = InputHandler.parseUserNumberInput(savedGames.size()) - 1;
+            GameState loadedState = GameStateHandler.loadGame(savedGames.get(selection));
+            if(loadedState!=null) {
+                OutputHandler.printMessage("Successfully loaded saved game!");
+                return loadedState;
+            }else {
+                OutputHandler.printError("An error has occured while loading the game. Starting a new one...");
+                return createNewGame();
+            }
+        }
+        else{
+            OutputHandler.printError("Error! No saved games exist! Starting a new game...");
+            return createNewGame();
+        }
     }
 
     public GameState createNewGame() {
@@ -53,27 +79,26 @@ public class Game {
     }
 
 
-    private void startGame(GameState state) {
+    private void startGame() {
 
 
 
         OutputHandler.clearTheScreen();
 
         //// The turns ////
-
+        ArrayList<Player> players = state.getPlayers();
         while (!state.gameIsOver()) {
             System.out.println("\n\nRound " + state.getCurrentTurn());
-
-            // Game logic
-            for (Player player: state.getPlayers()) {
+            for(int i = state.getCurrentPlayer(); i < players.size(); i++) {
+                Player player = players.get(i);
                 OutputHandler.displayPlayerStatus(player);
                 boolean gameContinues = showMainMenu(player);
                 if(!gameContinues) {
                     return;
                 }
                 OutputHandler.clearTheScreen();
+                state.setNextPlayer();
             }
-            //Updates state
             state.nextRound();
         }
     }
@@ -94,10 +119,11 @@ public class Game {
                 3. Breed animals
                 4. Sell animals
                 5. Check my status
-                6. Finish my turn
-                7. Exit game
+                6. Save game
+                7. Finish my turn
+                8. Exit game
                 """, player.getName());
-            selection = InputHandler.parseUserNumberInput(1, 7);
+            selection = InputHandler.parseUserNumberInput(1, 8);
             switch (selection) {
                 case 1:
                     showStoreMenu(player);
@@ -116,23 +142,36 @@ public class Game {
                 case 5:
                     OutputHandler.displayPlayerStatus(player);
                     break;
-                case 6:
+                case 6: //Save
+                    saveGame(state);
                     break;
-                case 7:
+                case 7: // Finish
+                    break;
+                case 8:
                     System.out.println("Spelet avslutas, tack för den här gången!");
                     break;
                     //throw new Exception("Finished");
             }
-        } while(selection < 6);
+        } while(selection < 7);
 
-        return selection != 7;
+        return selection != 8;
     }
 
+    private void saveGame(GameState state) {
+        OutputHandler.printMessage("Enter a save file name:");
+        String saveFile = InputHandler.getString();
+        if(GameStateHandler.saveGame(state, saveFile)) {
+            OutputHandler.printMessage("Game saved successfully!");
+        }
+        else{
+            OutputHandler.printError("Error! Could not save.");
+        }
+    }
 
     private void showFeedMenu(Player player) {
         if (player.ownedFoods.size() != 0) {
             System.out.println("\nWhich animal would you like to feed?");
-            OutputHandler.displayPlayerAnimals(player);
+            OutputHandler.displayAnimals(player);
             int selection = InputHandler.parseUserNumberInput(player.ownedAnimals.size());
             Animal animal = player.getAnimal(selection);
             System.out.println("\nWhat type of food should you give it?");
@@ -184,7 +223,38 @@ public class Game {
      */
     private void buyAnimal(Player player) {
 
-        if (player.hasEnoughMoney()) {
+        ArrayList<Animal> affordedAnimals = player.getAffordedAnimals(store);
+        if (affordedAnimals.size() > 0) {
+            System.out.println("What animal would you like to buy?");
+            OutputHandler.displayAnimals(affordedAnimals);
+
+            int selection = InputHandler.parseUserNumberInput(affordedAnimals.size()) - 1;
+            Animal animal = affordedAnimals.get(selection);
+
+            System.out.println("Oh, a " + animal.getType() + "! Which gender?");
+            System.out.println("1. Male");
+            System.out.println("2. Female");
+            selection = InputHandler.parseUserNumberInput(2);
+            if (selection == 1) {
+                animal.setGender(Animal.MALE);
+                System.out.println("You chose a male! What do you want to call him?");
+            } else {
+                animal.setGender(Animal.FEMALE);
+                System.out.println("You chose a female! What do you want to call her?");
+            }
+            String name = InputHandler.getUniqueAnimalName(player);
+
+            animal.setName(name);
+
+
+            player.addAnimal(animal);
+            player.subtractExpense(animal.getPrice());
+            store.replenishAnimal(animal);
+        } else {
+            OutputHandler.printMessage("You cannot afford any more animals!");
+        }
+        /*
+        if (player.hasEnoughMoney(player)) {
             System.out.println("What animal would you like to buy?");
             store.displayAnimals();
 
@@ -219,23 +289,16 @@ public class Game {
         } else {
             System.out.println("You don´t have enough money!");
         }
+         */
     }
-
-
-
-
-    private void sellAnimal(Player player) {
-        if(player.ownedAnimals.size() > 0) {
-            System.out.print("Which animal do you want to sell?");
-            //Not yet implemented
-        } else{
-            System.out.println("The player " + player.getName() + " does not have any animals!");
-        }
-
-    }
-
     private void buyAnimalFood(Player player) {
-        if (player.hasEnoughMoney()) {
+        ArrayList<Food> affordedFoods = player.getAffordedFood(store);
+        if(affordedFoods.size() > 0) {
+            OutputHandler.printError("Not yet implemented!");
+        } else{
+            OutputHandler.printError("You cannot afford any food!");
+        }
+        /*if (player.hasEnoughMoney(player)) {
             System.out.print("\nWhat food would you like to buy?\n");
             store.displayFoods();
 
@@ -254,5 +317,22 @@ public class Game {
         } else {
             System.out.println("You don´t have enough money!");
         }
+        */
+
+    }
+    private void sellAnimal(Player player) {
+        if (player.ownedAnimals.size() != 0) {
+            OutputHandler.printMessage("\nWhich animal do you want to sell?");
+            OutputHandler.displayAnimals(player);
+            int selection = InputHandler.parseUserNumberInput(player.ownedAnimals.size()) - 1;
+
+            Animal animal = player.getAnimal(selection);
+            player.addProfit(animal.getPrice());
+            player.ownedAnimals.remove(selection);
+
+        } else {
+            OutputHandler.printError("You have no animals!");
+        }
+
     }
 }

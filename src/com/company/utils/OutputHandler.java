@@ -4,8 +4,10 @@ import com.company.game.Player;
 import com.company.game.animals.Animal;
 import com.company.game.food.Food;
 
+import java.util.ArrayList;
+
 public class OutputHandler {
-    //TODO! All methods that print to the terminal should be put here
+
 
     private static final int CLEAR_SIZE = 20;
 
@@ -35,18 +37,7 @@ public class OutputHandler {
     }
 
 
-    /**
-     * Lists the status of a player's animals.
-     * @param player
-     */
-    public static void displayPlayerAnimals(Player player) {
-        int index = 1;
-        for (Animal animal : player.getAnimalList()) {
-            printMessage(index + ". " + animal.toString());
-            //System.out.println(index + ". " + animal.getType() + " " + animal.getPrice());
-            index++;
-        }
-    }
+
 
     /**
      * Lists the food available to a player.
@@ -66,12 +57,33 @@ public class OutputHandler {
 
         if (player.getAnimalList().size() != 0) {
             OutputHandler.printMessage("Your animals:");
-            displayPlayerAnimals(player);
+            displayAnimals(player);
         }
 
         if (player.getFoodList().size() != 0) {
             OutputHandler.printMessage("Your food: ");
             displayPlayerFoods(player);
+        }
+    }
+
+
+    /**
+     * Lists the status of a player's animals.
+     * @param player
+     */
+    public static void displayAnimals(Player player) {
+        displayAnimals(player.getAnimalList());
+    }
+
+    /**
+     * Lists a sequence of animals.
+     * @param animals animals to be listed
+     */
+    public static void displayAnimals(ArrayList<Animal> animals) {
+        int index = 1;
+        for (Animal animal : animals) {
+            printMessage(index + ". " + animal.toString());
+            index++;
         }
     }
 }

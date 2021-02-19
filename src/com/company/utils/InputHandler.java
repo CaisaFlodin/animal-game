@@ -41,6 +41,7 @@ public class InputHandler {
                 }
             } catch (InputMismatchException ignored) {
                 System.out.println("Error! not a number!");
+                scanner.nextLine();
             }
         }
         return number;
