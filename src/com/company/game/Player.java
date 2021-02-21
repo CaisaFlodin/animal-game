@@ -2,19 +2,18 @@ package com.company.game;
 
 import com.company.game.animals.*;
 import com.company.game.food.Food;
+import com.company.utils.OutputHandler;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-
 
 public class Player implements Serializable {
     private final static int STARTING_MONEY = 1000;
 
     private final String name;
-
     private int money;
-    protected ArrayList<Food> ownedFoods = new ArrayList<>();
-    protected ArrayList<Animal> ownedAnimals = new ArrayList<>();
+    private ArrayList<Food> ownedFoods = new ArrayList<>();
+    private ArrayList<Animal> ownedAnimals = new ArrayList<>();
 
     public Player(String name) {
         this.name = name;
@@ -29,16 +28,27 @@ public class Player implements Serializable {
         return money;
     }
 
-    public void setMoney(int money) {
-        this.money = money;
-    }
-
     public ArrayList<Food> getFoodList() {
         return ownedFoods;
     }
 
-    public void addFood(Food food) {
-        ownedFoods.add(food);
+    /**
+     * Adds new food to the user's inventory.
+     * If there already exists food of the same kind in the bag, its quantity will increase
+     * instead of adding a new food object.
+     * @param newFood the new food to be added.
+     */
+    public void addFood(Food newFood) {
+        //If the user already has the same kind of food in their bag, increase its quantity
+        for(Food ownedFood: ownedFoods) {
+            if(ownedFood.getType() == newFood.getType()) {
+                int newQuantity = ownedFood.getQuantity() + newFood.getQuantity();
+                ownedFood.setQuantity(newQuantity);
+                return;
+            }
+        }
+        // If the program gets here, it means there was no food of the same type in ownedFoods.
+        ownedFoods.add(newFood);
     }
 
     public ArrayList<Animal> getAnimalList() {
@@ -49,52 +59,21 @@ public class Player implements Serializable {
         ownedAnimals.add(animal);
     }
 
-    public void feedAnimal() {
-        int choice;
-    }
-
-    public boolean hasAnimalWithName(String name) {
-        for (Animal animal : ownedAnimals) {
-            if (animal.getName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
     /**
-     * Filters the available animals in the store, and returns the ones
-     * that the player can afford.
+     * Checks whether a player can continue playing in the next round.
+     * They should be able to continue if there have any living animals left,
+     * OR can purchase an animal with the money they have left.
      * @param store
      * @return
      */
-    public ArrayList<Animal> getAffordedAnimals(Store store) {
-        ArrayList<Animal> afforded = new ArrayList<>();
-        for(Animal a: store.getAnimalsForSale()) {
-            if(getMoney() >= a.getPrice()) {
-                afforded.add(a);
+    public boolean canContinue(Store store) {
+        if (ownedAnimals.size()==0){
+            ArrayList<Animal> affordedAnimals = store.getAffordedAnimals(money);
+            if(affordedAnimals.size() == 0) {
+                return false;
             }
-        }
-        return afforded;
+        } return true;
     }
-
-    /**
-     * Filters the available foods in the store, and returns the ones
-     * that the player can afford.
-     * @param store
-     * @return
-     */
-    public ArrayList<Food> getAffordedFood(Store store) {
-        ArrayList<Food> afforded = new ArrayList<>();
-        for(Food f: store.getFoodsForSale()) {
-            if(getMoney() >= f.getPrice()) {
-                afforded.add(f);
-            }
-        }
-        return afforded;
-    }
-
 
     public void subtractExpense(int expense) {
         money = money - expense;
@@ -104,30 +83,103 @@ public class Player implements Serializable {
     }
 
     public Animal getAnimal(int selection) {
-        return ownedAnimals.get(selection - 1);
+        return ownedAnimals.get(selection);
     }
 
     public Food getFood(int selection) {
-        return ownedFoods.get(selection - 1);
+        return ownedFoods.get(selection);
     }
 
     public String toString() {
         return getName() + " : " + getMoney() + " money left";
     }
 
-    public void roundEnded() {
+
+    /**
+     * Hurts animals, and remove them from the user's animal list if they are dead.
+     */
+    private void updateAnimalList() {
         ArrayList<Animal> deadAnimals = new ArrayList<>();
         for (Animal animal : ownedAnimals) {
-            animal.hurt();
-            if(!animal.isAlive()) {
+            animal.nextRound();
+
+            if(animal.isDead()) {
                 deadAnimals.add(animal);
             }
         }
-
         for(Animal deadAnimal: deadAnimals) {
-            System.out.println(getName() + " : " + deadAnimal.getName() + " is dead!! :(");
+            OutputHandler.printMessage(getName() + " : " + deadAnimal.getName() + " is dead!! :(");
             ownedAnimals.remove(deadAnimal);
         }
-
     }
+
+    /**
+     * Removes foods from a user's food list which have no quantity left.
+     */
+    private void updateFoodList() {
+        ArrayList<Food> emptyFoods = new ArrayList<>();
+
+        for(Food f: this.ownedFoods) {
+            if(!f.foodLeft()) {
+                emptyFoods.add(f);
+            }
+        }
+        for(Food emptyFood: emptyFoods) {
+            this.ownedFoods.remove(emptyFood);
+        }
+    }
+
+    /**
+     * Method that should be run every time a round has ended in the game.
+     */
+    public void nextRound() {
+        updateAnimalList();
+        updateFoodList();
+        this.setAnimalsCanBreed(true);
+    }
+
+    /**
+     * Calculates how many units of a type of food a user can buy.
+     * @param food the food to be bought.
+     * @return the maximum quantity of the food the user can buy.
+     */
+    public int getMaxQuantity(Food food) {
+        return getMoney() / food.getUnitPrice();
+    }
+
+    /**
+     * @return true if the user has not already bred their animals this round.
+     */
+    public boolean getCanBreedAnimals() {
+        int breedableAnimals = 0;
+        for(Animal a: ownedAnimals) {
+            if(a.canBreed()) {
+                breedableAnimals++;
+            }
+        }
+        return breedableAnimals > 0;
+    }
+
+    public void setAnimalsCanBreed(boolean canBreed) {
+        for(Animal a: ownedAnimals) {
+            a.setCanBreed(canBreed);
+        }
+    }
+
+    /**
+     * @return A list of names of all the animals that a player owns.
+     */
+    public ArrayList<String> getUsedAnimalNames() {
+        ArrayList<String> usedNames = new ArrayList<>();
+        for(Animal a: getAnimalList()) {
+            usedNames.add(a.getName());
+        }
+        return usedNames;
+    }
+
+    public void removeAnimal(Animal animal) {
+        this.ownedAnimals.remove(animal);
+    }
+
+
 }

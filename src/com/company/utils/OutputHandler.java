@@ -1,13 +1,13 @@
 package com.company.utils;
 
 import com.company.game.Player;
+import com.company.game.Store;
 import com.company.game.animals.Animal;
 import com.company.game.food.Food;
 
 import java.util.ArrayList;
 
 public class OutputHandler {
-
 
     private static final int CLEAR_SIZE = 20;
 
@@ -66,7 +66,6 @@ public class OutputHandler {
         }
     }
 
-
     /**
      * Lists the status of a player's animals.
      * @param player
@@ -85,5 +84,17 @@ public class OutputHandler {
             printMessage(index + ". " + animal.toString());
             index++;
         }
+    }
+    public static void displayFoods(ArrayList<Food>foods){
+        int index = 1;
+        for (Food food : foods) {
+            printMessage(index + "." + food.getName());
+            index++;
+        }
+    }
+
+    public static void displayStoreFoods(Store store) {
+        displayFoods(store.getFoodsForSale());
+
     }
 }

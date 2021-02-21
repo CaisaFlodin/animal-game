@@ -1,7 +1,7 @@
 package com.company.utils;
 
 import com.company.game.Player;
-
+import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
@@ -22,8 +22,8 @@ public class InputHandler {
     /**
      * Locks the user into a prompt that requires a number between lowerBound and upperBound (inclusive) to be
      * entered.
-     * @param lowerBound the lowest possible value
-     * @param upperBound the highest posible value
+     * @param lowerBound the lowest possible value (inclusive)
+     * @param upperBound the highest possible value (inclusive)
      * @return the selected value
      */
     public static int parseUserNumberInput(int lowerBound, int upperBound) {
@@ -37,10 +37,10 @@ public class InputHandler {
                     isDone = true;
                     //return number;
                 } else {
-                    System.out.println("Number has to be between " + lowerBound + " and " + upperBound);
+                    OutputHandler.printError("Number has to be between " + lowerBound + " and " + upperBound);
                 }
             } catch (InputMismatchException ignored) {
-                System.out.println("Error! not a number!");
+                OutputHandler.printError("Error! not a number!");
                 scanner.nextLine();
             }
         }
@@ -55,21 +55,28 @@ public class InputHandler {
         return scanner.nextLine();
     }
 
+
+    public static String getUniqueAnimalName(ArrayList<String> usedNames) {
+        String name;
+        while(true) {
+            name = getString();
+            if (usedNames.contains(name)) {
+                OutputHandler.printError("You already have an animal called" + name + "." + " Choose another name.");
+            }else{
+                return name;
+            }
+        }
+    }
+
     /**
      * Helper method. Locks the game until a name is given, which has not already been used by the player.
      * @param player
      * @return The unique name
      */
     public static String getUniqueAnimalName(Player player) {
-        String name;
-        while(true) {
-            name = getString();
-            if (player.hasAnimalWithName(name)) {
-                OutputHandler.printError("You already have an animal called" + name + "." + " Choose another name.");
-            }else{
-                return name;
-            }
-        }
+        ArrayList<String> usedNames = player.getUsedAnimalNames();
+        return getUniqueAnimalName(usedNames);
+
     }
 
 }

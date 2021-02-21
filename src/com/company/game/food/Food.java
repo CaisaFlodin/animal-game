@@ -4,41 +4,55 @@ import java.io.Serializable;
 
 public abstract class Food implements Serializable {
 
-    private int price;
-    private int healthValue;
-    private String name;
+    public static final int GRASS = 1, LEAVES = 2, MEAT = 3, STARDUST = 4;
+    // Health per unit food.
+    private static final int HEALTH_VALUE = 10;
 
-    public Food(String name, int price) {
-        this.name = name;
-        this.price = price;
+    private int quantity;
+
+    public Food() {
+        this.quantity = 0;
     }
 
-    public int getPrice() {
-        return price;
-    }
+    /** Returns what one unit of the food costs. Depends on the food.
+     * @return the cost of one unit of the food
+     */
+    public abstract int getUnitPrice();
 
-    public void setPrice(int price) {
-        this.price = price;
-    }
+    /**
+     * Returns a integer defined in Food, defining the type of food.
+     * @return food integer constant
+     */
+    public abstract int getType();
+
+    /**
+     * @return the name of the food.
+     */
+    public abstract String getName();
 
     public int getHealthValue() {
-        return healthValue;
-    }
-
-    public void setHealthValue(int healthValue) {
-        this.healthValue = healthValue;
-    }
-
-    public String getName() {
-        return name;
+        return HEALTH_VALUE;
     }
 
     public String toString() {
-        //TODO! add weight
-        return getName() + " : N/A kg left";
+        return getName() + " : " + getQuantity() + " kg left";
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public boolean foodLeft() {
+        return this.quantity > 0;
+    }
+
+    public void lowerQuantity() {
+        if(foodLeft()) {
+            this.quantity = this.quantity - 1;
+        }
     }
 }

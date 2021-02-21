@@ -5,9 +5,10 @@ import com.company.game.food.*;
 import com.company.utils.InputHandler;
 import com.company.utils.OutputHandler;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Store {
+public class Store implements Serializable {
 
     private ArrayList<Food> foodsForSale = new ArrayList<>();
     private ArrayList<Animal> animalsForSale = new ArrayList<>();
@@ -34,45 +35,8 @@ public class Store {
         animalsForSale.add(new Llama());
         animalsForSale.add(new Sloth());
     }
-
-    public Food buyStardust() {
-        return foodsForSale.get(0);
-    }
-
-    public Food buyMeat() {
-        return foodsForSale.get(1);
-    }
-
-    public Food buyLeaves() {
-        return foodsForSale.get(2);
-    }
-
-    public Food buyGrass() {
-        return foodsForSale.get(3);
-    }
-
-    public Animal buyUnicorn() {
-        return animalsForSale.get(0);
-    }
-
-    public Animal buyGryphon() {
-        return animalsForSale.get(1);
-    }
-
-    public Animal buyDragon() {
-        return animalsForSale.get(2);
-    }
-
-    public Animal buyLlama() {
-        return animalsForSale.get(3);
-    }
-
-    public Animal buySloth() {
-        return animalsForSale.get(4);
-    }
-
     /**
-     * Removes the animal from the list and creates a new one in it's stead.
+     * Removes the animal from the selling list and creates a new one in its stead.
      * @param animal the animal to be replaced
      */
     public void replenishAnimal(Animal animal) {
@@ -97,60 +61,56 @@ public class Store {
     public ArrayList<Food> getFoodsForSale() {
         return foodsForSale;
     }
+
+    /**
+     * Replenishes food in the store.
+     * @param food food to be replaced
+     */
+    public void replenishFood(Food food) {
+        int index = foodsForSale.indexOf(food);
+        Food newFood = switch (index) {
+            case 0 -> new Stardust();
+            case 1 -> new Meat();
+            case 2 -> new Leaves();
+            case 3 -> new Grass();
+            default -> null;
+        };
+        if(newFood != null) {
+            foodsForSale.set(index, newFood);
+        }
+
+    }
+
+    /**
+     * Filters the available animals in the store, and returns the ones
+     * that the player can afford.
+     * @param money
+     * @return
+     */
+    public ArrayList<Animal> getAffordedAnimals(int money) {
+        ArrayList<Animal> afforded = new ArrayList<>();
+        for(Animal a: animalsForSale){
+            if(a.getPrice() <= money) {
+                afforded.add(a);
+            }
+        }
+        return  afforded;
+    }
+
+    /**
+     * Filters the available foods in the store, and returns the ones
+     * that the player can afford.
+     * @param money
+     * @return
+     */
+    public ArrayList<Food> getAffordedFood(int money) {
+        ArrayList<Food> affordedFoods = new ArrayList<>();
+        for(Food f: foodsForSale) {
+            if(money >= f.getUnitPrice()) {
+                affordedFoods.add(f);
+            }
+        }
+        return affordedFoods;
+    }
 }
-
-
-
-
-   /* public Horse buyAHorse() {
-        return new Horse();
-
-    }
-
-    public Hen buyAHen(){
-        return new Hen();
-
-    }
-
-    public Pig buyAPig(){
-        return new Pig();
-
-    }
-
-    public Sheep buyASheep(){
-        return new Sheep();
-
-    }
-
-    public Cow buyACow(){
-        return new Cow();
-
-    }
-
-    // FOOD
-
-    public HorseFood buyHorseFood() {
-        return new HorseFood();
-
-    }
-
-    public HenFood buyHenFood(){
-        return new HenFood();
-
-    }
-
-    public PigFood buyPigFood(){
-        return new PigFood();
-
-    }
-
-    public SheepFood buySheepFood(){
-        return new SheepFood();
-
-    }
-
-    public CowFood buyCowFood(){
-        return new CowFood();
-
-    }*/
 
