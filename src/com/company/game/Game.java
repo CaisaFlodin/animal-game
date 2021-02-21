@@ -163,7 +163,7 @@ public class Game implements Serializable {
                 case 6: // Finish
                     break;
                 case 7:
-                    OutputHandler.printMessage("Spelet avslutas, tack för den här gången!");
+                    OutputHandler.printMessage("Exiting game");
                     break;
                     //throw new Exception("Finished");
             }
