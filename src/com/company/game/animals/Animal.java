@@ -19,11 +19,9 @@ public abstract class Animal implements Serializable {
     private int lastDamage;
     // This attribute starts off as false, otherwise a player can buy animals, breed them,
     // and immediately sell them with no loss in money.
-    private boolean canBreedThisRound;
 
     public Animal() {
         health = 100;
-        canBreedThisRound = false;
         gender = UNDEFINED;
         lastDamage = 0;
         age = 0;
@@ -114,18 +112,8 @@ public abstract class Animal implements Serializable {
     public void nextRound() {
         hurt();
         this.age = this.age + 1;
-        this.canBreedThisRound = true;
     }
 
-
-    /**
-     * checks if an animal can breed this round.
-     *
-     * @return true if the animal can breed
-     */
-    public boolean canBreed() {
-        return canBreedThisRound;
-    }
 
     /**
      * Checks if this animal is compatible with another animal.
@@ -158,7 +146,12 @@ public abstract class Animal implements Serializable {
         health = health - damage;
     }
 
-    public void feed(Food food) {
+    /**
+     * Attempts to feed the animal with the selected food.
+     * @param food the food to be fed
+     * @return true if the animal ate the food.
+     */
+    public boolean feed(Food food) {
         if (health == 100) {
             OutputHandler.printError("The animal is already healthy!");
         } else if (food.foodLeft()) {
@@ -167,9 +160,11 @@ public abstract class Animal implements Serializable {
                 health = 100;
             }
             food.lowerQuantity();
+            return true;
         } else {
             OutputHandler.printError("No food left!");
         }
+        return false;
     }
 
     public String toString() {
@@ -214,25 +209,18 @@ public abstract class Animal implements Serializable {
      * @return a list of spawned animal babies.
      */
     public ArrayList<Animal> attemptBreed(Animal partner) {
-
-
         ArrayList<Animal> newAnimals = new ArrayList<>();
-        // If the animals have exhausted their ability to breed this round, return prematurely
-        if (!this.canBreed() || !partner.canBreed()) {
+        if(!this.canBreedWith(partner)) {
             return newAnimals;
         }
 
         Random randomGenerator = new Random();
-        int maxNbrBabies = getMaximumLitterSize();
-
-        for (int i = 0; i < maxNbrBabies; i++) {
-
-            //Generates the numbers 0 or 1 randomly, simulating the 50% chance of spawning a baby.
-            int nbr = randomGenerator.nextInt(2);
-
-            if (nbr == 1) { //A baby!
+        // 50% chance that the pair spawns babies
+        int producesChildren = randomGenerator.nextInt(2);
+        if(producesChildren == 1) {
+            int nbrBabies = getMaximumLitterSize();
+            for(int i = 0; i < nbrBabies; i++) {
                 Animal newAnimal = this.spawnBaby();
-
                 //Generates the numbers 0 or 1 randomly, simulating the 50% chance of being either male or female.
                 int gender = randomGenerator.nextInt(2);
                 if (gender == 0) {
@@ -243,13 +231,6 @@ public abstract class Animal implements Serializable {
                 newAnimals.add(newAnimal);
             }
         }
-
-        //If the animals produced babies, prevent them from breeding further this round.
-        if (!newAnimals.isEmpty()) {
-            this.canBreedThisRound = false;
-            partner.canBreedThisRound = false;
-        }
-
         return newAnimals;
     }
 
@@ -266,10 +247,6 @@ public abstract class Animal implements Serializable {
      * @return an integer value of the maximum number of babies in a litter,
      */
     protected abstract int getMaximumLitterSize();
-
-    public void setCanBreed(boolean canBreed) {
-        this.canBreedThisRound = canBreed;
-    }
 
     public int getAge() {
         return age;

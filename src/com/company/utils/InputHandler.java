@@ -19,6 +19,17 @@ public class InputHandler {
         return parseUserNumberInput(1, numberOfAlternatives);
     }
 
+
+    public static boolean parseYesNo(String question) {
+        OutputHandler.printMessage(question);
+        OutputHandler.printMessage("1. Yes\n2. No");
+        int selection = parseUserNumberInput(1, 2);
+        if(selection == 1) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Locks the user into a prompt that requires a number between lowerBound and upperBound (inclusive) to be
      * entered.

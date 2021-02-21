@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class OutputHandler {
 
-    private static final int CLEAR_SIZE = 20;
+    private static final int CLEAR_SIZE = 2;
 
 
     /**

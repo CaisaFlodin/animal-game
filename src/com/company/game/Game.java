@@ -132,8 +132,12 @@ public class Game implements Serializable {
      */
     private boolean showMainMenu(Player player) {
         int selection = -1;
-        do {
-            OutputHandler.printMessage("What do you want to do " + player.getName() + "?" +
+        boolean isDone = false;
+        boolean actionTaken = false;
+        boolean continueGame = true;
+
+        while(!isDone) {
+            OutputHandler.printMessage("What do you want to do " + player.getName() + "?\n" +
                     """
                 1. Go to store
                 2. Feed my animals
@@ -146,13 +150,13 @@ public class Game implements Serializable {
             selection = InputHandler.parseUserNumberInput(1, 7);
             switch (selection) {
                 case 1:
-                    showStoreMenu(player);
+                    actionTaken = showStoreMenu(player);
                     break;
                 case 2:
-                    showFeedMenu(player);
+                    actionTaken = showFeedMenu(player);
                     break;
                 case 3:
-                    attemptBreeding(player);
+                    actionTaken = breedAnimals(player);
                     break;
                 case 4:
                     OutputHandler.displayPlayerStatus(player);
@@ -161,15 +165,20 @@ public class Game implements Serializable {
                     saveGame();
                     break;
                 case 6: // Finish
+                    isDone = true;
                     break;
                 case 7:
                     OutputHandler.printMessage("Exiting game");
+                    isDone = true;
+                    continueGame = false;
                     break;
-                    //throw new Exception("Finished");
             }
-        } while(selection < 6);
+            if(actionTaken) {
+                isDone = true;
+            }
+        }
 
-        return selection != 7;
+        return continueGame;
     }
 
     private void saveGame() {
@@ -183,42 +192,61 @@ public class Game implements Serializable {
         }
     }
 
-    private void showFeedMenu(Player player) {
-        if(player.getAnimalList().isEmpty()) {
-            OutputHandler.printError("You have no animals!");
-        } else if(player.getFoodList().isEmpty()) {
-            OutputHandler.printError("You have no food!");
-        } else {
-            OutputHandler.printMessage("Which animal would you like to feed?");
-            OutputHandler.displayAnimals(player);
-            int selection = InputHandler.parseUserNumberInput(player.getAnimalList().size()) - 1;
-            Animal animal = player.getAnimal(selection);
-            OutputHandler.printMessage("What type of food should you give it?");
-            OutputHandler.displayPlayerFoods(player);
-            selection = InputHandler.parseUserNumberInput(player.getFoodList().size()) - 1;
-            Food food = player.getFood(selection);
-            if(animal.canEat(food) && food.foodLeft()) {
-                OutputHandler.printMessage("You feed " + animal.getName());
-                animal.feed(food);
-            }
-            else if(!food.foodLeft()) {
-                OutputHandler.printError("No food left!");
+    /**
+     * Lets the player feed an animal.
+     * @param player
+     * @return true if the player has fed any animal.
+     */
+    private boolean showFeedMenu(Player player) {
+        boolean isDone = false;
+        boolean actionTaken = false;
+        do {
+            if (player.getAnimalList().isEmpty()) {
+                OutputHandler.printError("You have no animals!");
+                isDone = true;
+            } else if (player.getFoodList().isEmpty()) {
+                OutputHandler.printError("You have no food!");
+                isDone = true;
             } else {
-                OutputHandler.printError("This animal cannot eat this food!");
+                OutputHandler.printMessage("Which animal would you like to feed?");
+                OutputHandler.displayAnimals(player);
+                int selection = InputHandler.parseUserNumberInput(player.getAnimalList().size()) - 1;
+                Animal animal = player.getAnimal(selection);
+                OutputHandler.printMessage("What type of food should you give it?");
+                OutputHandler.displayPlayerFoods(player);
+                selection = InputHandler.parseUserNumberInput(player.getFoodList().size()) - 1;
+                Food food = player.getFood(selection);
+                if (animal.canEat(food) && food.foodLeft()) {
+                    OutputHandler.printMessage("You feed " + animal.getName());
+                    if(animal.feed(food)) {
+                        actionTaken = true;
+                    }
+                    if(!food.foodLeft()) {
+                        player.removeFood(food);
+                    }
+                } else if (!food.foodLeft()) {
+                    OutputHandler.printError("No food left!");
+                } else {
+                    OutputHandler.printError("This animal cannot eat this food!");
+                }
+                if(!InputHandler.parseYesNo("Feed another animal?")) {
+                    isDone = true;
+                }
             }
-
+            } while (!isDone);
+        return actionTaken;
         }
-    }
 
     /**
      * Locks the player in the store selection prompt until they decide to leave.
      * @param player the current player
      */
-    private void showStoreMenu(Player player) {
-
+    private boolean showStoreMenu(Player player) {
         OutputHandler.printMessage("Welcome to the store!");
+        boolean isDone = false;
+        boolean actionTaken = false;
         int selection = -1;
-        do {
+        while(!isDone) {
             OutputHandler.printMessage("""                         
                  What do you want to do?:
                 1. Buy animals
@@ -228,18 +256,23 @@ public class Game implements Serializable {
             selection = InputHandler.parseUserNumberInput(1, 4);
             switch(selection) {
                 case 1:
-                    buyAnimal(player);
+                    actionTaken = buyAnimal(player);
                     break;
                 case 2:
-                    buyAnimalFood(player);
+                    actionTaken = buyAnimalFood(player);
                     break;
                 case 3:
-                    sellAnimal(player);
+                    actionTaken = sellAnimal(player);
                     break;
                 case 4:
+                    isDone = true;
                     break;
             }
-        } while(selection != 4);
+            if(actionTaken) {
+                isDone = true;
+            }
+        }
+        return actionTaken;
     }
 
 
@@ -247,136 +280,168 @@ public class Game implements Serializable {
      * Lets the player select an animal for purchase, should they have enough funds.
      * @param player the current player
      */
-    private void buyAnimal(Player player) {
+    private boolean buyAnimal(Player player) {
         int money = player.getMoney();
+        boolean actionTaken = false;
+        boolean isDone = false;
         Store store = state.getStore();
-        ArrayList<Animal> affordedAnimals = store.getAffordedAnimals(money);
-        if (affordedAnimals.size() > 0) {
-            OutputHandler.printMessage("What animal would you like to buy?");
-            OutputHandler.displayAnimals(affordedAnimals);
+        while(!isDone) {
+            ArrayList<Animal> affordedAnimals = store.getAffordedAnimals(money);
+            if (affordedAnimals.size() > 0) {
+                OutputHandler.printMessage("What animal would you like to buy?");
+                OutputHandler.displayAnimals(affordedAnimals);
 
-            int selection = InputHandler.parseUserNumberInput(affordedAnimals.size()) - 1;
-            Animal animal = affordedAnimals.get(selection);
+                int selection = InputHandler.parseUserNumberInput(affordedAnimals.size()) - 1;
+                Animal animal = affordedAnimals.get(selection);
 
-            OutputHandler.printMessage("Oh, a " + animal.getType() + "! Which gender?");
-            OutputHandler.printMessage("1. Male");
-            OutputHandler.printMessage("2. Female");
-            selection = InputHandler.parseUserNumberInput(2);
-            if (selection == 1) {
-                animal.setGender(Animal.MALE);
-                OutputHandler.printMessage("You chose a male! What do you want to call him?");
+                OutputHandler.printMessage("Oh, a " + animal.getType() + "! Which gender?");
+                OutputHandler.printMessage("1. Male");
+                OutputHandler.printMessage("2. Female");
+                selection = InputHandler.parseUserNumberInput(2);
+                if (selection == 1) {
+                    animal.setGender(Animal.MALE);
+                    OutputHandler.printMessage("You chose a male! What do you want to call him?");
+                } else {
+                    animal.setGender(Animal.FEMALE);
+                    OutputHandler.printMessage("You chose a female! What do you want to call her?");
+                }
+                String name = InputHandler.getUniqueAnimalName(player);
+
+                animal.setName(name);
+                player.addAnimal(animal);
+                player.subtractExpense(animal.getPrice());
+                store.replenishAnimal(animal);
+                actionTaken = true;
+                if(!InputHandler.parseYesNo("Buy another animal?")) {
+                    isDone = true;
+                }
             } else {
-                animal.setGender(Animal.FEMALE);
-                OutputHandler.printMessage("You chose a female! What do you want to call her?");
+                OutputHandler.printMessage("You cannot afford any more animals!");
+                isDone = true;
             }
-            String name = InputHandler.getUniqueAnimalName(player);
-
-            animal.setName(name);
-
-
-            player.addAnimal(animal);
-            player.subtractExpense(animal.getPrice());
-            store.replenishAnimal(animal);
-        } else {
-            OutputHandler.printMessage("You cannot afford any more animals!");
         }
+        return actionTaken;
     }
-    private void buyAnimalFood(Player player) {
 
+    private boolean buyAnimalFood(Player player) {
+        boolean isDone = false;
+        boolean actionTaken = false;
         int money = player.getMoney();
         Store store = state.getStore();
-        ArrayList<Food> affordedFoods = store.getAffordedFood(money);
-        if(affordedFoods.size() > 0) {
-            OutputHandler.printMessage("What food would you like to buy?");
-            OutputHandler.displayFoods(affordedFoods);
+        while(!isDone) {
+            ArrayList<Food> affordedFoods = store.getAffordedFood(money);
+            if (affordedFoods.size() > 0) {
+                OutputHandler.printMessage("What food would you like to buy?");
+                OutputHandler.displayFoods(affordedFoods);
 
-            int selection = InputHandler.parseUserNumberInput(affordedFoods.size())-1;
+                int selection = InputHandler.parseUserNumberInput(affordedFoods.size()) - 1;
 
-            Food food = affordedFoods.get(selection);
+                Food food = affordedFoods.get(selection);
 
-            int maximum = player.getMaxQuantity(food);
-            if(maximum == 0) {
-                OutputHandler.printError("You cannot afford it!");
-                return;
-            }
+                int maximum = player.getMaxQuantity(food);
+                if (maximum == 0) {
+                    OutputHandler.printError("You cannot afford it!");
+                }else{
+                    OutputHandler.printMessage("How much food do you want? (Maximum " + maximum + ")");
+                    int quantity = InputHandler.parseUserNumberInput(1, maximum);
 
-            OutputHandler.printMessage("How much food do you want? (Maximum " + maximum + ")");
-            int quantity = InputHandler.parseUserNumberInput(1, maximum);
-
-            food.setQuantity(quantity);
-            player.subtractExpense(food.getUnitPrice() * food.getQuantity());
-            player.addFood(food);
-
-            store.replenishFood(food);
-
-        } else{
-            OutputHandler.printError("You cannot afford any food!");
-        }
-
-    }
-
-    private void sellAnimal(Player player) {
-        if (player.getAnimalList().size() != 0) {
-            OutputHandler.printMessage("Which animal do you want to sell?");
-            OutputHandler.displayAnimals(player);
-            int selection = InputHandler.parseUserNumberInput(player.getAnimalList().size()) - 1;
-
-            Animal animal = player.getAnimal(selection);
-            OutputHandler.printMessage("Selling " + animal.getType() + " " + animal.getName()
-            + " for " + animal.getPrice() + " money!");
-            player.addProfit(animal.getPrice());
-
-            player.removeAnimal(animal);
-
-        } else {
-            OutputHandler.printError("You have no animals!");
-        }
-
-    }
-
-    private void attemptBreeding(Player player) {
-        if(!player.getCanBreedAnimals()) {
-            OutputHandler.printError("Your animals cannot breed this round!");
-        }
-        else{
-            ArrayList<Animal> animalList = player.getAnimalList();
-            ArrayList<Animal> newAnimals = new ArrayList<>();
-            ArrayList<String> usedNames = player.getUsedAnimalNames();
-            for(int i = 0; i < animalList.size(); i++) {
-                for(int j = i + 1; j < animalList.size(); j++) {
-
-                    Animal a1 = animalList.get(i);
-                    Animal a2 = animalList.get(j);
-
-                    if(a1.canBreedWith(a2)) {
-                        OutputHandler.printMessage("Attempting to breed " + a1.getType() + " " + a1.getName() +
-                                " with " + a2.getType() + " " + a2.getName());
-                        ArrayList<Animal> children = a1.attemptBreed(a2);
-                        if (!children.isEmpty()) {
-                            OutputHandler.printMessage("Hooray! You have " + children.size() + " new " +
-                                    a1.getType() + "s!");
-                            for (int k = 0; k < children.size(); k++) {
-                                OutputHandler.printMessage("What do you want to call " + a1.getType() + " baby " + (k + 1) + "?");
-                                String name = InputHandler.getUniqueAnimalName(usedNames);
-                                usedNames.add(name);
-                                Animal newAnimal = children.get(k);
-                                newAnimal.setName(name);
-                                newAnimals.add(newAnimal);
-                            }
-                        }
-                        else{
-                            OutputHandler.printMessage("No luck! " + a1.getName() + " and " + a2.getName() +
-                                    " did not produce any offspring.");
-                        }
-
+                    food.setQuantity(quantity);
+                    player.subtractExpense(food.getUnitPrice() * food.getQuantity());
+                    player.addFood(food);
+                    actionTaken = true;
+                    store.replenishFood(food);
+                    if(!InputHandler.parseYesNo("Buy more food?")) {
+                        isDone = true;
                     }
                 }
+            } else {
+                OutputHandler.printError("You cannot afford any food!");
+                isDone = true;
             }
-            for(Animal a: newAnimals) {
-                player.addAnimal(a);
-            }
-            //Prevents the player from breeding animals again this round.
-            player.setAnimalsCanBreed(false);
         }
+        return actionTaken;
+    }
+
+    private boolean sellAnimal(Player player) {
+        boolean isDone = false;
+        boolean actionTaken = false;
+        while(!isDone) {
+            if (player.getAnimalList().size() != 0) {
+                OutputHandler.printMessage("Which animal do you want to sell?");
+                OutputHandler.displayAnimals(player);
+                int selection = InputHandler.parseUserNumberInput(player.getAnimalList().size()) - 1;
+
+                Animal animal = player.getAnimal(selection);
+                OutputHandler.printMessage("Selling " + animal.getType() + " " + animal.getName()
+                        + " for " + animal.getPrice() + " money!");
+                player.addProfit(animal.getPrice());
+
+                player.removeAnimal(animal);
+                actionTaken = true;
+
+                if(!InputHandler.parseYesNo("Sell another animal?")) {
+                    isDone = true;
+                }
+
+            } else {
+                OutputHandler.printError("You have no animals!");
+                isDone = true;
+            }
+        }
+        return actionTaken;
+
+    }
+
+    private boolean breedAnimals(Player player) {
+
+        boolean isDone = false;
+        boolean actionTaken = false;
+        ArrayList<String> usedNames = player.getUsedAnimalNames();
+        ArrayList<Animal> animals = player.getAnimalList();
+
+        while(!isDone) {
+            if(animals.size() > 1) {
+                OutputHandler.printMessage("Select an animal to breed");
+                OutputHandler.displayAnimals(animals);
+                int selection = InputHandler.parseUserNumberInput(animals.size()) - 1;
+                Animal a1 = animals.get(selection);
+                OutputHandler.printMessage("Select a partner for " + a1.toString());
+                OutputHandler.displayAnimals(animals);
+                selection = InputHandler.parseUserNumberInput(animals.size()) - 1;
+                Animal a2 = animals.get(selection);
+                if(a1.canBreedWith(a2)) {
+                    ArrayList<Animal> children = a1.attemptBreed(a2);
+                    if(!children.isEmpty()) {
+                        OutputHandler.printMessage("Hooray! You got " + children.size() + " new "
+                        + a1.getType() + "s!");
+                        for(int i = 0; i < children.size(); i++) {
+                            Animal child = children.get(i);
+                            OutputHandler.printMessage("What do you want to call baby " + (i+1) +
+                                    ", a " + child.getGenderString() + "?");
+                            String name = InputHandler.getUniqueAnimalName(usedNames);
+                            child.setName(name);
+                            usedNames.add(name);
+                            player.addAnimal(child);
+                        }
+                    }
+                    else {
+                        OutputHandler.printMessage("No luck! This pairing did not yield any offspring.");
+                    }
+                    actionTaken = true;
+                    isDone = true;
+                }else {
+                    OutputHandler.printError("These two animals are incompatible!");
+                    if(!InputHandler.parseYesNo("Try again?")) {
+                        isDone = true;
+                    }
+                }
+
+            }
+            else {
+                OutputHandler.printError("Not enough animals for breeding!");
+                isDone = true;
+            }
+        }
+        return actionTaken;
     }
 }

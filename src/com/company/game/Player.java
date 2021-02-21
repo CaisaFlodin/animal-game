@@ -135,7 +135,6 @@ public class Player implements Serializable {
     public void nextRound() {
         updateAnimalList();
         updateFoodList();
-        this.setAnimalsCanBreed(true);
     }
 
     /**
@@ -147,24 +146,6 @@ public class Player implements Serializable {
         return getMoney() / food.getUnitPrice();
     }
 
-    /**
-     * @return true if the user has not already bred their animals this round.
-     */
-    public boolean getCanBreedAnimals() {
-        int breedableAnimals = 0;
-        for(Animal a: ownedAnimals) {
-            if(a.canBreed()) {
-                breedableAnimals++;
-            }
-        }
-        return breedableAnimals > 0;
-    }
-
-    public void setAnimalsCanBreed(boolean canBreed) {
-        for(Animal a: ownedAnimals) {
-            a.setCanBreed(canBreed);
-        }
-    }
 
     /**
      * @return A list of names of all the animals that a player owns.
@@ -182,4 +163,7 @@ public class Player implements Serializable {
     }
 
 
+    public void removeFood(Food food) {
+        this.ownedFoods.remove(food);
+    }
 }
