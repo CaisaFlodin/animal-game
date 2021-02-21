@@ -217,7 +217,7 @@ public class Game implements Serializable {
                 selection = InputHandler.parseUserNumberInput(player.getFoodList().size()) - 1;
                 Food food = player.getFood(selection);
                 if (animal.canEat(food) && food.foodLeft()) {
-                    OutputHandler.printMessage("You feed " + animal.getName());
+                    OutputHandler.printMessage("You fed " + animal.getName());
                     if(animal.feed(food)) {
                         actionTaken = true;
                     }

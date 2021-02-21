@@ -72,7 +72,7 @@ public class InputHandler {
         while(true) {
             name = getString();
             if (usedNames.contains(name)) {
-                OutputHandler.printError("You already have an animal called" + name + "." + " Choose another name.");
+                OutputHandler.printError("You already have an animal called " + name + "." + " Choose another name.");
             }else{
                 return name;
             }
